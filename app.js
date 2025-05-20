@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Отображаем приложение (скрывает загрузчик Telegram)
     tgApp.ready();
     
-    // Расширим функциональность - добавим MainButton
+    // Расширим функциональность - добавим BottomButton
     tgApp.MainButton.setParams({
         text: "Выберите ассистента",
         color: tgApp.themeParams.button_color,
@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Добавляем обработчик для основной кнопки
     tgApp.MainButton.onClick(function() {
         if (selectedAssistant) {
-            launchAssistant(selectedAssistant);
+            // Вместо открытия URL-схемы Telegram, используем метод sendData
+            sendCommandToBot(selectedAssistant);
         }
     });
     
@@ -78,48 +79,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Запускает выбранного ассистента через URL-схему Telegram
+     * Отправляет выбранную команду в бота через метод sendData
      * @param {string} command - Команда для отправки боту
      */
-    function launchAssistant(command) {
-        // Получаем имя бота из URL-параметров или используем дефолтное
-        const botUsername = getBotUsername() || 'your_bot_username';  // Замените на имя вашего бота, если не найдено в URL
-        
-        // Формируем URL-схему Telegram
-        const telegramUrl = `tg://resolve?domain=${botUsername}&command=${command}`;
-        
+    function sendCommandToBot(command) {
         // Показываем процесс запуска
         tgApp.MainButton.showProgress();
         
-        // Показываем подтверждение и переходим по ссылке
-        setTimeout(() => {
+        // Подготавливаем данные для отправки
+        const dataToSend = `/${command}`;
+        
+        try {
+            // Отправляем данные в бота
+            tgApp.sendData(dataToSend);
+            
+            // После отправки данных Mini App закроется автоматически
+            // Нет необходимости вызывать tgApp.close()
+        } catch (error) {
+            console.error('Ошибка при отправке данных:', error);
             tgApp.MainButton.hideProgress();
             
-            tgApp.showPopup({
-                title: 'Ассистент выбран',
-                message: `Вы выбрали ассистента "${getAssistantName(command)}". Сейчас вы будете перенаправлены в чат с ботом.`,
-                buttons: [
-                    {id: "ok", type: "ok", text: "Продолжить"}
-                ]
-            }, function(buttonId) {
-                // Открываем ссылку в Telegram
-                tgApp.openTelegramLink(telegramUrl);
-                
-                // Закрываем Mini App после небольшой задержки
-                setTimeout(() => {
-                    tgApp.close();
-                }, 500);
-            });
-        }, 700);
-    }
-    
-    /**
-     * Получает имя бота из URL-параметров
-     * @returns {string|null} - Имя бота или null, если не найдено
-     */
-    function getBotUsername() {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('bot') || null;
+            // Показываем ошибку пользователю
+            tgApp.showAlert('Произошла ошибка при выборе ассистента. Пожалуйста, попробуйте еще раз.');
+        }
     }
     
     /**
