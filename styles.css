@@ -6,6 +6,7 @@
     --tg-theme-button-color: #2481cc;
     --tg-theme-button-text-color: #ffffff;
     --tg-theme-secondary-bg-color: #f0f0f0;
+    --tg-theme-button-color-rgb: 36, 129, 204;
 }
 
 body {
@@ -33,6 +34,13 @@ header h1 {
     margin: 0;
 }
 
+.header-subtitle {
+    text-align: center;
+    color: var(--tg-theme-hint-color);
+    margin-top: 8px;
+    font-size: 14px;
+}
+
 .assistants-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -49,9 +57,17 @@ header h1 {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    border: 2px solid transparent;
 }
 
 .assistant-card:hover, .assistant-card:active {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.assistant-card.selected {
+    border: 2px solid var(--tg-theme-button-color);
+    background-color: rgba(var(--tg-theme-button-color-rgb), 0.1);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
@@ -71,6 +87,40 @@ header h1 {
     font-size: 14px;
     color: var(--tg-theme-hint-color);
     margin: 0;
+}
+
+.assistant-examples {
+    margin-top: 12px;
+    text-align: left;
+    width: 100%;
+    font-size: 12px;
+}
+
+.assistant-examples strong {
+    color: var(--tg-theme-text-color);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.assistant-examples ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.assistant-examples li {
+    margin-bottom: 2px;
+    color: var(--tg-theme-hint-color);
+}
+
+footer {
+    margin-top: 24px;
+    text-align: center;
+    color: var(--tg-theme-hint-color);
+    font-size: 13px;
+}
+
+.dark {
+    /* Дополнительные стили для темной темы, если необходимо */
 }
 
 /* Адаптивная верстка */
