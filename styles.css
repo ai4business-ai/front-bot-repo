@@ -15,12 +15,16 @@ body {
     padding: 0;
     background-color: var(--tg-theme-bg-color);
     color: var(--tg-theme-text-color);
+    overflow-x: hidden;
 }
 
 .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 header {
@@ -32,6 +36,7 @@ header h1 {
     font-size: 24px;
     font-weight: 600;
     margin: 0;
+    line-height: 1.2;
 }
 
 .header-subtitle {
@@ -39,12 +44,14 @@ header h1 {
     color: var(--tg-theme-hint-color);
     margin-top: 8px;
     font-size: 14px;
+    line-height: 1.3;
 }
 
 .assistants-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 16px;
+    flex: 1;
 }
 
 .assistant-card {
@@ -52,12 +59,14 @@ header h1 {
     border-radius: 12px;
     padding: 20px;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
 }
 
 .assistant-card:hover, .assistant-card:active {
@@ -72,6 +81,23 @@ header h1 {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
+.assistant-card.selected::before {
+    content: '✓';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
 .assistant-icon {
     font-size: 36px;
     margin-bottom: 12px;
@@ -81,12 +107,14 @@ header h1 {
     font-size: 18px;
     font-weight: 600;
     margin: 0 0 8px 0;
+    line-height: 1.2;
 }
 
 .assistant-card p {
     font-size: 14px;
     color: var(--tg-theme-hint-color);
-    margin: 0;
+    margin: 0 0 12px 0;
+    line-height: 1.3;
 }
 
 .assistant-examples {
@@ -99,37 +127,125 @@ header h1 {
 .assistant-examples strong {
     color: var(--tg-theme-text-color);
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .assistant-examples ul {
     margin: 0;
-    padding-left: 20px;
+    padding-left: 16px;
 }
 
 .assistant-examples li {
-    margin-bottom: 2px;
+    margin-bottom: 3px;
     color: var(--tg-theme-hint-color);
+    line-height: 1.2;
 }
 
 footer {
     margin-top: 24px;
-    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--tg-theme-secondary-bg-color);
+}
+
+.instruction-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.step-number {
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.step-text {
     color: var(--tg-theme-hint-color);
     font-size: 13px;
+    line-height: 1.3;
 }
 
 .dark {
     /* Дополнительные стили для темной темы, если необходимо */
 }
 
+/* Улучшения для touch устройств */
+@media (hover: none) {
+    .assistant-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .assistant-card:active {
+        transform: scale(0.98);
+    }
+}
+
 /* Адаптивная верстка */
 @media (max-width: 600px) {
     .assistants-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
     
     .container {
         padding: 12px;
+    }
+    
+    .assistant-card {
+        padding: 16px;
+    }
+    
+    header h1 {
+        font-size: 20px;
+    }
+    
+    .assistant-icon {
+        font-size: 32px;
+    }
+    
+    .instruction-steps {
+        gap: 8px;
+    }
+    
+    .step {
+        padding: 6px 0;
+    }
+}
+
+/* Улучшения для очень маленьких экранов */
+@media (max-width: 360px) {
+    .container {
+        padding: 8px;
+    }
+    
+    .assistant-card {
+        padding: 12px;
+    }
+    
+    header h1 {
+        font-size: 18px;
+    }
+    
+    .header-subtitle {
+        font-size: 13px;
     }
 }
