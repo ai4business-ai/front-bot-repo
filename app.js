@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Отображаем приложение (скрывает загрузчик Telegram)
     tgApp.ready();
     
+    // Проверяем режим запуска (inline или обычный)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isInlineMode = urlParams.get('mode') === 'inline';
+    
     // Расширим функциональность - добавим BottomButton
     tgApp.MainButton.setParams({
         text: "Выберите ассистента",
@@ -22,6 +26,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Переменная для хранения выбранного ассистента
     let selectedAssistant = null;
     
+    // Обновляем заголовок в зависимости от режима
+    const headerTitle = document.querySelector('header h1');
+    const headerSubtitle = document.querySelector('.header-subtitle');
+    
+    if (isInlineMode) {
+        headerTitle.textContent = 'Выберите бизнес-ассистента';
+        headerSubtitle.textContent = 'Нажмите на карточку, затем на кнопку "Запустить ассистента"';
+    }
+    
     // Добавляем обработчики событий для карточек ассистентов
     const assistantCards = document.querySelectorAll('.assistant-card');
     assistantCards.forEach(card => {
@@ -37,7 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Обновляем и показываем основную кнопку
             const assistantName = getAssistantName(selectedAssistant);
-            tgApp.MainButton.setText(`Запустить: ${assistantName}`);
+            
+            if (isInlineMode) {
+                tgApp.MainButton.setText(`Запустить: ${assistantName}`);
+            } else {
+                tgApp.MainButton.setText(`Выбрать: ${assistantName}`);
+            }
+            
             tgApp.MainButton.enable();
             tgApp.MainButton.show();
         });
@@ -46,10 +65,62 @@ document.addEventListener('DOMContentLoaded', function() {
     // Добавляем обработчик для основной кнопки
     tgApp.MainButton.onClick(function() {
         if (selectedAssistant) {
-            // Вместо открытия URL-схемы Telegram, используем метод sendData
-            sendCommandToBot(selectedAssistant);
+            if (isInlineMode) {
+                // В inline режиме возвращаемся к inline query с выбранным ассистентом
+                returnToInlineMode(selectedAssistant);
+            } else {
+                // В обычном режиме (если нужен fallback)
+                sendCommandToBot(selectedAssistant);
+            }
         }
     });
+    
+    /**
+     * Возвращает к inline режиму с выбранным ассистентом
+     * @param {string} assistantType - Тип выбранного ассистента
+     */
+    function returnToInlineMode(assistantType) {
+        try {
+            // Показываем процесс
+            tgApp.MainButton.showProgress();
+            
+            // Формируем текст для поиска конкретного ассистента
+            const query = getAssistantName(assistantType);
+            
+            // Возвращаемся к inline режиму с предустановленным запросом
+            tgApp.switchInlineQuery(query);
+            
+        } catch (error) {
+            console.error('Ошибка при возврате к inline режиму:', error);
+            tgApp.MainButton.hideProgress();
+            tgApp.showAlert('Произошла ошибка. Пожалуйста, попробуйте еще раз.');
+        }
+    }
+    
+    /**
+     * Отправляет выбранную команду в бота через метод sendData (fallback)
+     * @param {string} command - Команда для отправки боту
+     */
+    function sendCommandToBot(command) {
+        // Показываем процесс запуска
+        tgApp.MainButton.showProgress();
+        
+        // Подготавливаем данные для отправки
+        const dataToSend = `/${command}`;
+        
+        try {
+            // Отправляем данные в бота
+            tgApp.sendData(dataToSend);
+            
+            // После отправки данных Mini App закроется автоматически
+        } catch (error) {
+            console.error('Ошибка при отправке данных:', error);
+            tgApp.MainButton.hideProgress();
+            
+            // Показываем ошибку пользователю
+            tgApp.showAlert('Произошла ошибка при выборе ассистента. Пожалуйста, попробуйте еще раз.');
+        }
+    }
     
     /**
      * Применяет цвета темы Telegram к CSS переменным
@@ -75,32 +146,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const rgb = hexToRgb(buttonColor);
         if (rgb) {
             document.documentElement.style.setProperty('--tg-theme-button-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-        }
-    }
-    
-    /**
-     * Отправляет выбранную команду в бота через метод sendData
-     * @param {string} command - Команда для отправки боту
-     */
-    function sendCommandToBot(command) {
-        // Показываем процесс запуска
-        tgApp.MainButton.showProgress();
-        
-        // Подготавливаем данные для отправки
-        const dataToSend = `/${command}`;
-        
-        try {
-            // Отправляем данные в бота
-            tgApp.sendData(dataToSend);
-            
-            // После отправки данных Mini App закроется автоматически
-            // Нет необходимости вызывать tgApp.close()
-        } catch (error) {
-            console.error('Ошибка при отправке данных:', error);
-            tgApp.MainButton.hideProgress();
-            
-            // Показываем ошибку пользователю
-            tgApp.showAlert('Произошла ошибка при выборе ассистента. Пожалуйста, попробуйте еще раз.');
         }
     }
     
