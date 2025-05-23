@@ -64,10 +64,9 @@ document.addEventListener('DOMContentLoaded', function() {
             tgApp.MainButton.showProgress();
             tgApp.MainButton.setText("Отправка...");
             
-            // Отправляем данные о выбранном ассистенте
-            // Данные будут обработаны в боте как сигнал для показа меню выбора
+            // Отправляем данные о конкретно выбранном ассистенте
             const dataToSend = JSON.stringify({
-                action: "show_assistant_selection",
+                action: "show_specific_assistant",
                 selected_assistant: selectedAssistant
             });
             
