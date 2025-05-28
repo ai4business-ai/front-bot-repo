@@ -29,18 +29,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Обработчик события изменения темы
     tgApp.onEvent('themeChanged', applyTelegramTheme);
     
-    // Переменная для хранения выбранного ассистента
+    // Переменные для хранения состояния
     let selectedAssistant = null;
+    let isRegistered = false;
+    let currentUser = null;
     
     // Определяем способ запуска Mini App
     const launchSource = detectLaunchSource();
     console.log('Launch source detected:', launchSource);
     console.log('InitData:', tgApp.initDataUnsafe);
     
+    // Получаем информацию о пользователе и проверяем статус регистрации
+    initializeUser();
+    
     // Добавляем обработчики событий для карточек ассистентов
     const assistantCards = document.querySelectorAll('.assistant-card');
     assistantCards.forEach(card => {
         card.addEventListener('click', function() {
+            if (!isRegistered) {
+                // Если пользователь не зарегистрирован, показываем процесс регистрации
+                showRegistrationFlow();
+                return;
+            }
+            
             // Снимаем выделение со всех карточек
             assistantCards.forEach(c => c.classList.remove('selected'));
             
@@ -60,10 +71,209 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Добавляем обработчик для основной кнопки
     tgApp.MainButton.onClick(function() {
+        if (!isRegistered) {
+            showRegistrationFlow();
+            return;
+        }
+        
         if (selectedAssistant) {
             sendAssistantSelection(launchSource);
         }
     });
+    
+    /**
+     * Инициализирует информацию о пользователе
+     */
+    function initializeUser() {
+        const initData = tgApp.initDataUnsafe;
+        
+        if (initData.user) {
+            currentUser = initData.user;
+            displayUserInfo(currentUser);
+            
+            // В реальном приложении здесь бы была проверка статуса регистрации через API
+            // Для демонстрации используем localStorage (в продакшене это будет API запрос)
+            checkRegistrationStatus();
+        }
+    }
+    
+    /**
+     * Отображает информацию о пользователе в правом верхнем углу
+     */
+    function displayUserInfo(user) {
+        const userInfoContainer = document.getElementById('user-info');
+        if (userInfoContainer && user) {
+            const displayName = user.username ? `@${user.username}` : 
+                               (user.first_name || 'Пользователь');
+            
+            userInfoContainer.innerHTML = `
+                <div class="user-profile">
+                    <div class="user-avatar">${getInitials(user)}</div>
+                    <div class="user-name">${displayName}</div>
+                    <div class="registration-status ${isRegistered ? 'registered' : 'not-registered'}">
+                        ${isRegistered ? '✅' : '⏳'}
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Получает инициалы пользователя для аватара
+     */
+    function getInitials(user) {
+        if (user.first_name) {
+            const firstInitial = user.first_name.charAt(0).toUpperCase();
+            const lastInitial = user.last_name ? user.last_name.charAt(0).toUpperCase() : '';
+            return firstInitial + lastInitial;
+        }
+        return user.username ? user.username.charAt(0).toUpperCase() : 'U';
+    }
+    
+    /**
+     * Проверяет статус регистрации пользователя
+     */
+    async function checkRegistrationStatus() {
+        try {
+            // В будущем здесь будет API запрос для проверки статуса
+            // Пока используем localStorage для демонстрации
+            const storedStatus = localStorage.getItem(`user_registered_${currentUser.id}`);
+            isRegistered = storedStatus === 'true';
+            
+            updateUIBasedOnRegistration();
+            displayUserInfo(currentUser);
+        } catch (error) {
+            console.error('Ошибка при проверке статуса регистрации:', error);
+            isRegistered = false;
+            updateUIBasedOnRegistration();
+        }
+    }
+    
+    /**
+     * Обновляет интерфейс в зависимости от статуса регистрации
+     */
+    function updateUIBasedOnRegistration() {
+        const instructionSteps = document.querySelector('.instruction-steps');
+        const headerSubtitle = document.querySelector('.header-subtitle');
+        
+        if (!isRegistered) {
+            // Показываем инструкции для незарегистрированных пользователей
+            if (headerSubtitle) {
+                headerSubtitle.textContent = 'Пройдите быструю регистрацию, чтобы начать использовать ассистентов';
+            }
+            
+            if (instructionSteps) {
+                instructionSteps.innerHTML = `
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-text">Нажмите на любого ассистента для регистрации</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-text">Подтвердите регистрацию</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-text">Выберите нужного ассистента</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-text">Начните общение в чате с ботом</div>
+                    </div>
+                `;
+            }
+            
+            // Добавляем класс для незарегистрированных пользователей
+            document.body.classList.add('not-registered');
+        } else {
+            // Показываем обычные инструкции для зарегистрированных пользователей
+            if (headerSubtitle) {
+                headerSubtitle.textContent = 'Нажмите на карточку, затем на кнопку "Выбрать" внизу экрана';
+            }
+            
+            document.body.classList.remove('not-registered');
+        }
+    }
+    
+    /**
+     * Показывает процесс регистрации
+     */
+    function showRegistrationFlow() {
+        if (!currentUser) {
+            tgApp.showAlert('Ошибка: Информация о пользователе недоступна');
+            return;
+        }
+        
+        const userName = currentUser.first_name || currentUser.username || 'Пользователь';
+        
+        tgApp.showConfirm(
+            `👋 Привет, ${userName}!\n\n` +
+            `Для использования ИИ-ассистентов необходимо пройти быструю регистрацию.\n\n` +
+            `📋 Ваши данные:\n` +
+            `• Имя: ${currentUser.first_name || 'Не указано'}\n` +
+            `• Username: ${currentUser.username ? '@' + currentUser.username : 'Не указан'}\n\n` +
+            `Продолжить регистрацию?`,
+            function(confirmed) {
+                if (confirmed) {
+                    performRegistration();
+                }
+            }
+        );
+    }
+    
+    /**
+     * Выполняет регистрацию пользователя
+     */
+    async function performRegistration() {
+        try {
+            // Показываем процесс регистрации
+            tgApp.MainButton.setText("Регистрация...");
+            tgApp.MainButton.showProgress();
+            tgApp.MainButton.show();
+            
+            // В продакшене здесь был бы API запрос с валидацией initData
+            // Для демонстрации используем localStorage
+            
+            // Имитируем API запрос
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Сохраняем статус регистрации
+            localStorage.setItem(`user_registered_${currentUser.id}`, 'true');
+            isRegistered = true;
+            
+            // Отправляем данные в бота через sendData (только для keyboard button)
+            const registrationData = {
+                action: "register_user",
+                user_id: currentUser.id,
+                source: launchSource
+            };
+            
+            if (launchSource === 'keyboard') {
+                tgApp.sendData(JSON.stringify(registrationData));
+            } else {
+                // Для menu button показываем успешную регистрацию
+                tgApp.MainButton.hideProgress();
+                tgApp.MainButton.hide();
+                
+                tgApp.showAlert(
+                    '✅ Регистрация завершена!\n\n' +
+                    'Теперь вы можете выбрать ассистента и начать общение.',
+                    function() {
+                        // Обновляем интерфейс
+                        updateUIBasedOnRegistration();
+                        displayUserInfo(currentUser);
+                    }
+                );
+            }
+            
+        } catch (error) {
+            console.error('Ошибка при регистрации:', error);
+            tgApp.MainButton.hideProgress();
+            tgApp.MainButton.hide();
+            
+            tgApp.showAlert('❌ Ошибка при регистрации. Попробуйте еще раз.');
+        }
+    }
     
     /**
      * Определяет способ запуска Mini App
@@ -86,6 +296,11 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} source - источник запуска приложения
      */
     function sendAssistantSelection(source) {
+        if (!isRegistered) {
+            showRegistrationFlow();
+            return;
+        }
+        
         try {
             // Показываем процесс
             tgApp.MainButton.showProgress();
@@ -96,7 +311,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const dataToSend = JSON.stringify({
                     action: "show_specific_assistant",
                     selected_assistant: selectedAssistant,
-                    source: source
+                    source: source,
+                    user_id: currentUser.id
                 });
                 
                 console.log('Sending data via sendData:', dataToSend);
