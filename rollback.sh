@@ -6,6 +6,7 @@
 declare -A VERSIONS
 VERSIONS[1.0.0]="initial-release"
 VERSIONS[1.0.1]="version-1.0.1"
+VERSIONS[2.0.0]="version-2.0.0-registration" 
 # Добавляйте новые версии здесь
 
 # Функция для отображения доступных версий
