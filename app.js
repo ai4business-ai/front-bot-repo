@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Расширяем приложение на всю высоту
     tgApp.expand();
     
+    // Проверяем обновления и отображаем версию
+    if (window.AppVersion) {
+        window.AppVersion.checkForUpdates();
+        window.AppVersion.displayVersion();
+    }
+    
     // Настройка основной кнопки
     tgApp.MainButton.setParams({
         text: "Выберите ассистента",
@@ -25,6 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Переменная для хранения выбранного ассистента
     let selectedAssistant = null;
+    
+    // Определяем способ запуска Mini App
+    const launchSource = detectLaunchSource();
+    console.log('Launch source detected:', launchSource);
     
     // Добавляем обработчики событий для карточек ассистентов
     const assistantCards = document.querySelectorAll('.assistant-card');
@@ -50,37 +60,116 @@ document.addEventListener('DOMContentLoaded', function() {
     // Добавляем обработчик для основной кнопки
     tgApp.MainButton.onClick(function() {
         if (selectedAssistant) {
-            // Отправляем данные в бота для запуска выбора ассистента
-            sendAssistantSelection();
+            sendAssistantSelection(launchSource);
         }
     });
     
     /**
-     * Отправляет информацию о выбранном ассистенте в бота
+     * Определяет способ запуска Mini App
+     * @returns {string} - тип запуска: 'keyboard', 'menu', 'inline' или 'unknown'
      */
-    function sendAssistantSelection() {
+    function detectLaunchSource() {
+        const initData = tgApp.initDataUnsafe;
+        
+        // Проверяем наличие query_id - если есть, то это запуск из inline/menu button
+        if (initData.query_id) {
+            // Проверяем наличие start_param - если есть, то это menu button
+            if (initData.start_param !== undefined) {
+                return 'menu';
+            } else {
+                return 'inline';
+            }
+        } else {
+            // Если нет query_id, то это keyboard button
+            return 'keyboard';
+        }
+    }
+    
+    /**
+     * Отправляет информацию о выбранном ассистенте в бота
+     * @param {string} source - источник запуска приложения
+     */
+    function sendAssistantSelection(source) {
         try {
             // Показываем процесс
             tgApp.MainButton.showProgress();
             tgApp.MainButton.setText("Отправка...");
             
-            // Отправляем данные о конкретно выбранном ассистенте
-            const dataToSend = JSON.stringify({
-                action: "show_specific_assistant",
-                selected_assistant: selectedAssistant
-            });
+            if (source === 'keyboard') {
+                // Для keyboard button используем sendData
+                const dataToSend = JSON.stringify({
+                    action: "show_specific_assistant",
+                    selected_assistant: selectedAssistant,
+                    source: source
+                });
+                
+                console.log('Sending data via sendData:', dataToSend);
+                tgApp.sendData(dataToSend);
+                
+            } else if (source === 'menu' || source === 'inline') {
+                // Для menu button и inline используем answerWebAppQuery через API
+                sendViaWebAppQuery(selectedAssistant, source);
+                
+            } else {
+                // Fallback - пытаемся использовать sendData
+                console.log('Unknown source, trying sendData fallback');
+                const dataToSend = JSON.stringify({
+                    action: "show_specific_assistant", 
+                    selected_assistant: selectedAssistant,
+                    source: 'fallback'
+                });
+                tgApp.sendData(dataToSend);
+            }
             
-            tgApp.sendData(dataToSend);
-            
-            // После отправки данных Mini App закроется автоматически
         } catch (error) {
             console.error('Ошибка при отправке данных:', error);
-            tgApp.MainButton.hideProgress();
-            tgApp.MainButton.setText(`Выбрать: ${getAssistantName(selectedAssistant)}`);
-            
-            // Показываем ошибку пользователю
-            tgApp.showAlert('Произошла ошибка при выборе ассистента. Пожалуйста, попробуйте еще раз.');
+            handleSendError();
         }
+    }
+    
+    /**
+     * Отправляет данные через WebApp Query (для menu/inline buttons)
+     * @param {string} assistantType - тип выбранного ассистента
+     * @param {string} source - источник запуска
+     */
+    function sendViaWebAppQuery(assistantType, source) {
+        // Создаем сообщение для отправки через answerWebAppQuery
+        const messageData = {
+            type: "article",
+            id: "assistant_" + assistantType + "_" + Date.now(),
+            title: `Выбран ассистент: ${getAssistantName(assistantType)}`,
+            description: getAssistantDescription(assistantType),
+            message_text: `🤖 Выбран ассистент: *${getAssistantName(assistantType)}*\n\n${getAssistantDescription(assistantType)}\n\n💬 Нажмите кнопку ниже для начала общения:`,
+            parse_mode: "Markdown",
+            reply_markup: {
+                inline_keyboard: [[{
+                    text: `🚀 Запустить ${getAssistantName(assistantType)}`,
+                    callback_data: `select_${assistantType}`
+                }]]
+            }
+        };
+        
+        console.log('Sending via WebApp query:', messageData);
+        
+        // Используем метод switchInlineQuery для отправки результата
+        tgApp.switchInlineQuery('assistant_selected_' + assistantType, ['private']);
+        
+        // Альтернативный способ - закрываем приложение и показываем уведомление
+        setTimeout(() => {
+            tgApp.showAlert(`Выбран ассистент: ${getAssistantName(assistantType)}. Вернитесь в чат и нажмите на кнопку "Выбрать ассистента" для продолжения.`);
+            tgApp.close();
+        }, 500);
+    }
+    
+    /**
+     * Обработка ошибки отправки
+     */
+    function handleSendError() {
+        tgApp.MainButton.hideProgress();
+        tgApp.MainButton.setText(`Выбрать: ${getAssistantName(selectedAssistant)}`);
+        
+        // Показываем ошибку пользователю с инструкцией
+        tgApp.showAlert('Произошла ошибка при выборе ассистента. Пожалуйста, вернитесь в чат и воспользуйтесь кнопкой "Выбрать ассистента" из клавиатуры.');
     }
     
     /**
@@ -140,6 +229,22 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         return names[command] || command;
+    }
+    
+    /**
+     * Возвращает описание ассистента по его команде
+     * @param {string} command - Команда ассистента
+     * @returns {string} - Описание ассистента
+     */
+    function getAssistantDescription(command) {
+        const descriptions = {
+            'market': 'Помогает проанализировать рынок, конкурентов и найти ниши для развития',
+            'founder': 'Помогает обсудить и проработать идеи основателя бизнеса',
+            'business': 'Помогает составить и проанализировать бизнес-модель',
+            'adapter': 'Помогает адаптировать успешные идеи из различных кейсов для вашего бизнеса'
+        };
+        
+        return descriptions[command] || 'Бизнес-ассистент';
     }
     
     /**
