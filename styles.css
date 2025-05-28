@@ -25,11 +25,82 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+/* Стили для информации о пользователе */
+.user-info-container {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--tg-theme-secondary-bg-color);
+    border-radius: 20px;
+    padding: 6px 12px 6px 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.user-profile:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--tg-theme-text-color);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.registration-status {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.registration-status.registered {
+    background-color: #4caf50;
+    color: white;
+}
+
+.registration-status.not-registered {
+    background-color: #ff9800;
+    color: white;
 }
 
 header {
     text-align: center;
     margin-bottom: 24px;
+    margin-top: 60px; /* Отступ для информации о пользователе */
 }
 
 header h1 {
@@ -96,6 +167,30 @@ header h1 {
     justify-content: center;
     font-size: 14px;
     font-weight: bold;
+}
+
+/* Стили для незарегистрированных пользователей */
+.not-registered .assistant-card {
+    position: relative;
+}
+
+.not-registered .assistant-card::after {
+    content: '🔒 Регистрация';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.not-registered .assistant-card:hover::after {
+    background-color: #f57c00;
 }
 
 .assistant-icon {
@@ -183,6 +278,11 @@ footer {
     line-height: 1.3;
 }
 
+/* Специальные стили для инструкций незарегистрированных пользователей */
+.not-registered .step-number {
+    background-color: #ff9800;
+}
+
 /* Стили для отображения версии */
 .version-info {
     text-align: center;
@@ -212,6 +312,11 @@ footer {
     .assistant-card:active {
         transform: scale(0.98);
     }
+    
+    .user-profile:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
 }
 
 /* Адаптивная верстка */
@@ -229,6 +334,10 @@ footer {
         padding: 16px;
     }
     
+    header {
+        margin-top: 60px;
+    }
+    
     header h1 {
         font-size: 20px;
     }
@@ -244,6 +353,22 @@ footer {
     .step {
         padding: 6px 0;
     }
+    
+    .user-info-container {
+        top: 12px;
+        right: 12px;
+    }
+    
+    .user-name {
+        max-width: 100px;
+        font-size: 13px;
+    }
+    
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
 }
 
 /* Улучшения для очень маленьких экранов */
@@ -256,6 +381,10 @@ footer {
         padding: 12px;
     }
     
+    header {
+        margin-top: 50px;
+    }
+    
     header h1 {
         font-size: 18px;
     }
@@ -263,4 +392,62 @@ footer {
     .header-subtitle {
         font-size: 13px;
     }
+    
+    .user-info-container {
+        top: 8px;
+        right: 8px;
+    }
+    
+    .user-profile {
+        padding: 4px 8px 4px 4px;
+        border-radius: 16px;
+    }
+    
+    .user-name {
+        max-width: 80px;
+        font-size: 12px;
+    }
+    
+    .user-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+    }
+    
+    .registration-status {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+    }
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-profile {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.assistant-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Состояния загрузки */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading .assistant-card {
+    transform: none !important;
+    box-shadow: none !important;
 }
