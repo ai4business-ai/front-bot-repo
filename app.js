@@ -1,3 +1,9 @@
+// Добавьте в начало app.js в front-bot-repo:
+if (window.location.search.includes('tgWebAppVersion=') && localStorage.getItem('force_refresh') !== '2.0.0') {
+    localStorage.setItem('force_refresh', '2.0.0');
+    window.location.reload(true);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Инициализация Telegram WebApp
     const tgApp = window.Telegram.WebApp;
