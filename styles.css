@@ -239,6 +239,14 @@ header h1 {
     line-height: 1.2;
 }
 
+.assistant-image {
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+
+
 footer {
     margin-top: 24px;
     padding-top: 16px;
